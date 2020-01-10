@@ -30,7 +30,7 @@ const refreshTokens = [];
 // })
 router.get('/',authenticateToken, async (req, res) => {
     try {
-        const users = await User.find({__v:0},{ username: 1, role: 1, _id: 1 })
+        const users = await User.find({__v:0,role:'admin'},{ username: 1,email:1, role: 1, _id: 1 }).sort( { _id: -1 } )
         res.json(users)
     }
     catch (err) {
@@ -54,6 +54,7 @@ router.post('/insert', async (req, res) => {
     console.log(hashPass);
     const user = new User({
         username: req.body.username,
+        email: req.body.email,
         password: hashPass,
         role: req.body.role
     })
@@ -65,6 +66,17 @@ router.post('/insert', async (req, res) => {
             res.json({ message: err })
         })
     //for inserting e
+})
+router.post('/emailvalidation', async (req, res) => {
+    try {
+        const users = await User.find({__v:0,email:req.body.email},{ username: 1,email:1, role: 1, _id: 1 })
+        let xx = {found:false}
+        if(users.length>0) xx.found = true
+        res.json(xx)
+    }
+    catch (err) {
+        res.json(err)
+    }
 })
 router.post('/', async (req, res) => {
     try {
@@ -124,7 +136,7 @@ router.post('/token', (req, res) => {
     })
 })
 function generateAccessToken(user) {
-    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1m' }) //15s
+    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '10m' }) //15s
 }
 router.delete('/:userId', async (req, res) => {
     try {
