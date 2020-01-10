@@ -24,9 +24,18 @@ const posts = [
     }
 ]
 const refreshTokens = [];
-router.get('/', authenticateToken, (req, res) => {
-    res.json(posts)
-    //res.json(posts.filter(post => post.username === req.user.username))
+// router.get('/', authenticateToken, (req, res) => {
+//     res.json(posts)
+//     //res.json(posts.filter(post => post.username === req.user.username))
+// })
+router.get('/',authenticateToken, async (req, res) => {
+    try {
+        const users = await User.find({__v:0},{ username: 1, role: 1, _id: 1 })
+        res.json(users)
+    }
+    catch (err) {
+        res.json(err)
+    }
 })
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization']
@@ -39,6 +48,24 @@ function authenticateToken(req, res, next) {
         next()
     })
 }
+router.post('/insert', async (req, res) => {
+    //for inserting s
+    const hashPass = await bcrypt.hash(req.body.password, 10);
+    console.log(hashPass);
+    const user = new User({
+        username: req.body.username,
+        password: hashPass,
+        role: req.body.role
+    })
+    user.save()
+        .then((data) => {
+            res.json(data);
+        })
+        .catch((err) => {
+            res.json({ message: err })
+        })
+    //for inserting e
+})
 router.post('/', async (req, res) => {
     try {
         //for inserting s
@@ -97,7 +124,7 @@ router.post('/token', (req, res) => {
     })
 })
 function generateAccessToken(user) {
-    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '3m' }) //15s
+    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1m' }) //15s
 }
 router.delete('/:userId', async (req, res) => {
     try {

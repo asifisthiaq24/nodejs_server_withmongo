@@ -11,6 +11,7 @@ const UserSchema = mongoose.Schema({
     },
     role : {
         type : String,
+        require : true
     }
 });
 
