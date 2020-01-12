@@ -37,6 +37,15 @@ router.get('/', authenticateToken, async (req, res) => {
         res.json(err)
     }
 })
+router.get('/operator', authenticateToken, async (req, res) => {
+    try {
+        const users = await User.find({ __v: 0, role: 'operator' }, { username: 1, email: 1, role: 1, _id: 1 }).sort({ _id: -1 })
+        res.json(users)
+    }
+    catch (err) {
+        res.json(err)
+    }
+})
 router.post('/getuser', async (req, res) => {
     try {
         const users = await User.find({ _id: req.body.id, role: req.body.role }, { username: 1, email: 1, role: 1, _id: 1 })
