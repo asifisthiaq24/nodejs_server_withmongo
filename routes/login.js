@@ -28,9 +28,18 @@ const refreshTokens = [];
 //     res.json(posts)
 //     //res.json(posts.filter(post => post.username === req.user.username))
 // })
-router.get('/',authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
     try {
-        const users = await User.find({__v:0,role:'admin'},{ username: 1,email:1, role: 1, _id: 1 }).sort( { _id: -1 } )
+        const users = await User.find({ __v: 0, role: 'admin' }, { username: 1, email: 1, role: 1, _id: 1 }).sort({ _id: -1 })
+        res.json(users)
+    }
+    catch (err) {
+        res.json(err)
+    }
+})
+router.post('/getuser', async (req, res) => {
+    try {
+        const users = await User.find({ _id: req.body.id, role: req.body.role }, { username: 1, email: 1, role: 1, _id: 1 })
         res.json(users)
     }
     catch (err) {
@@ -69,9 +78,9 @@ router.post('/insert', async (req, res) => {
 })
 router.post('/emailvalidation', async (req, res) => {
     try {
-        const users = await User.find({__v:0,email:req.body.email},{ username: 1,email:1, role: 1, _id: 1 })
-        let xx = {found:false}
-        if(users.length>0) xx.found = true
+        const users = await User.find({ __v: 0, email: req.body.email }, { username: 1, email: 1, role: 1, _id: 1 })
+        let xx = { found: false }
+        if (users.length > 0) xx.found = true
         res.json(xx)
     }
     catch (err) {
@@ -121,6 +130,35 @@ router.post('/', async (req, res) => {
             res.json({ message: err })
         }
     } catch (err) {
+        res.json({ message: err })
+    }
+})
+router.patch('/updateuser/:userId', async (req, res) => {
+    try {
+        if (req.body.password == 'empty') {
+            const userUpdate = await User.updateOne(
+                { _id: req.params.userId },
+                { $set: { username: req.body.username, email: req.body.email, role: req.body.role } })
+            res.json(userUpdate)
+        }
+        else {
+            const hashPass = await bcrypt.hash(req.body.password, 10);
+            const userUpdate = await User.updateOne(
+                { _id: req.params.userId },
+                { $set: { username: req.body.username, email: req.body.email, role: req.body.role, password: hashPass } })
+            res.json(userUpdate)
+        }
+    }
+    catch (err) {
+        res.json({ message: err })
+    }
+})
+router.delete('/deleteuser/:userId', async (req, res) => {
+    try {
+        const userRemove = await User.remove({ _id: req.params.userId })
+        res.json(userRemove)
+    }
+    catch (err) {
         res.json({ message: err })
     }
 })
