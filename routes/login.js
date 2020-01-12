@@ -87,6 +87,15 @@ router.post('/emailvalidation', async (req, res) => {
         res.json(err)
     }
 })
+router.get('/getrole/:userId', async (req, res) => {
+    try {
+        const users = await User.find({_id: req.params.userId }, { role: 1, _id: 1 })
+        res.json({role:users[0].role})
+    }
+    catch (err) {
+        res.json({ message: err })
+    }
+})
 router.post('/', async (req, res) => {
     try {
         //for inserting s
@@ -119,7 +128,8 @@ router.post('/', async (req, res) => {
                     const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET)
                     refreshTokens.push(refreshToken)
                     //jwt e
-                    res.json({ message: 'Login successful.', accessToken: accessToken, refreshToken: refreshToken });
+                    const users = await User.find({username: req.body.username }, { username: 1, email: 1, role: 1, _id: 1 })
+                    res.json({ message: 'Login successful.', accessToken: accessToken, refreshToken: refreshToken, id: users[0]._id });
                 }
                 else {
                     res.json({ message: 'The password that you\'ve entered is incorrect.' });
