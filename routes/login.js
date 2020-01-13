@@ -1,9 +1,64 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User')
+const Machine = require('../models/Machine')
+const Mao = require('../models/Mao')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 
+
+//-------------------------
+router.post('/addmao', (req, res) => {
+    //for inserting s
+    const mao_ = new Mao({
+        mid: req.body.mid,
+        oid: req.body.oid,
+        username: req.body.username,
+        schedule: req.body.schedule,
+        activatedDate: new Date(req.body.activatedDate)
+    })
+    mao_.save()
+        .then((data) => {
+            res.json(data);
+        })
+        .catch((err) => {
+            res.json({ message: err })
+        })
+    //for inserting e
+})
+router.get('/mao', async (req, res) => {
+    try {
+        const maos = await Mao.find({ __v: 0 }, { _id:1,mid: 1, oid: 1,username:1,schedule:1,activatedDate:1}).sort({ _id: -1 })
+        res.json(maos)
+    }
+    catch (err) {
+        res.json(err)
+    }
+})
+router.post('/getmachineoption', async (req, res) => {
+    try {
+        console.log(req.body.schedule)
+        console.log(req.body.activatedDate)
+        const maos = await Mao.find({ schedule:req.body.schedule,activatedDate:new Date(req.body.activatedDate.toString())}, { oid: 1, mid: 1,_id:0 })
+        console.log(maos)
+        let macArray=[];
+        let opArray = [];
+        for(let i=0;i<maos.length;i++){
+            macArray.push(maos[i].mid);
+            opArray.push(maos[i].oid);
+        }
+        const macs = await Machine.find({ __v: 0,_id: { $nin: macArray } }, { name: 1, _id: 1 })
+        console.log(macs)
+
+        const users = await User.find({ role: 'operator',_id: { $nin: opArray } }, { username: 1, _id: 1 })
+        console.log(users)
+        res.json({ms:macs,us:users})
+    }
+    catch (err) {
+        res.json(err)
+    }
+})
+//------------------------
 // router.get('/', async (req, res) => {
 //     try {
 //         const users = await User.find()
@@ -55,6 +110,24 @@ router.post('/getuser', async (req, res) => {
         res.json(err)
     }
 })
+router.get('/machine', async (req, res) => {
+    try {
+        const macs = await Machine.find({ __v: 0 }, { name: 1, assigned: 1 }).sort({ _id: -1 })
+        res.json(macs)
+    }
+    catch (err) {
+        res.json(err)
+    }
+})
+router.post('/getmachine', async (req, res) => {
+    try {
+        const macs = await Machine.find({ _id: req.body.id }, { name: 1, _id: 1 })
+        res.json(macs)
+    }
+    catch (err) {
+        res.json(err)
+    }
+})
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization']
     const token = authHeader && authHeader.split(' ')[1]
@@ -66,6 +139,22 @@ function authenticateToken(req, res, next) {
         next()
     })
 }
+
+router.post('/addmachine', (req, res) => {
+    //for inserting s
+    const mac = new Machine({
+        name: req.body.name,
+        assigned: 'no'
+    })
+    mac.save()
+        .then((data) => {
+            res.json(data);
+        })
+        .catch((err) => {
+            res.json({ message: err })
+        })
+    //for inserting e
+})
 router.post('/insert', async (req, res) => {
     //for inserting s
     const hashPass = await bcrypt.hash(req.body.password, 10);
@@ -98,8 +187,8 @@ router.post('/emailvalidation', async (req, res) => {
 })
 router.get('/getrole/:userId', async (req, res) => {
     try {
-        const users = await User.find({_id: req.params.userId }, { role: 1, _id: 1 })
-        res.json({role:users[0].role})
+        const users = await User.find({ _id: req.params.userId }, { role: 1, _id: 1 })
+        res.json({ role: users[0].role })
     }
     catch (err) {
         res.json({ message: err })
@@ -137,7 +226,7 @@ router.post('/', async (req, res) => {
                     const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET)
                     refreshTokens.push(refreshToken)
                     //jwt e
-                    const users = await User.find({username: req.body.username }, { username: 1, email: 1, role: 1, _id: 1 })
+                    const users = await User.find({ username: req.body.username }, { username: 1, email: 1, role: 1, _id: 1 })
                     res.json({ message: 'Login successful.', accessToken: accessToken, refreshToken: refreshToken, id: users[0]._id });
                 }
                 else {
@@ -172,10 +261,30 @@ router.patch('/updateuser/:userId', async (req, res) => {
         res.json({ message: err })
     }
 })
+router.patch('/updatemachine/:macId', async (req, res) => {
+    try {
+        const machineUpdate = await Machine.updateOne(
+            { _id: req.params.macId },
+            { $set: { name: req.body.name } })
+        res.json(machineUpdate)
+    }
+    catch (err) {
+        res.json({ message: err })
+    }
+})
 router.delete('/deleteuser/:userId', async (req, res) => {
     try {
         const userRemove = await User.remove({ _id: req.params.userId })
         res.json(userRemove)
+    }
+    catch (err) {
+        res.json({ message: err })
+    }
+})
+router.delete('/deletemachine/:macId', async (req, res) => {
+    try {
+        const machineRemove = await Machine.remove({ _id: req.params.macId })
+        res.json(machineRemove)
     }
     catch (err) {
         res.json({ message: err })

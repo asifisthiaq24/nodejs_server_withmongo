@@ -17,15 +17,8 @@ app.use('/login',loginRoute)
 app.get('/', (req,res)=>{
     res.send('Hello World');
 })
-// app.get('/posts', (req,res)=>{
-//     res.send('Hello posts');
-// })
+
+
+
 mongoose.connect(process.env.DB_CONNECTION,{ useUnifiedTopology: true,useNewUrlParser: true },()=>console.log('DB Connection Successful'))
 app.listen(3001)
-// fetch('http://localhost:3001/posts/')
-//     .then(result =>{
-//       return result.json()
-//       })   
-//       .then( data =>{
-//         console.log(data)
-//       })
