@@ -21,4 +21,5 @@ app.get('/', (req,res)=>{
 
 
 mongoose.connect(process.env.DB_CONNECTION,{ useUnifiedTopology: true,useNewUrlParser: true },()=>console.log('DB Connection Successful'))
-app.listen(3001)
+//app.listen(7667)
+app.listen(process.env.PORT, '0.0.0.0')
