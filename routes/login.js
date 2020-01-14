@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken')
 
 
 //-------------------------
-router.post('/addmao', (req, res) => {
+router.post('/addmao', async (req, res) => {
     //for inserting s
     const mao_ = new Mao({
         mid: req.body.mid,
@@ -17,6 +17,16 @@ router.post('/addmao', (req, res) => {
         schedule: req.body.schedule,
         activatedDate: new Date(req.body.activatedDate)
     })
+    try {
+        const macUpdate = await Machine.updateOne(
+            { _id: req.body.mid },
+            { $set: { assigned: 'yes' } })
+        res.json(macUpdate)
+    }
+    catch (err) {
+        //res.json({ message: err })
+        console.log(err)
+    }
     mao_.save()
         .then((data) => {
             res.json(data);
@@ -28,7 +38,16 @@ router.post('/addmao', (req, res) => {
 })
 router.get('/mao', async (req, res) => {
     try {
-        const maos = await Mao.find({ __v: 0 }, { _id:1,mid: 1, oid: 1,username:1,schedule:1,activatedDate:1}).sort({ _id: -1 })
+        const maos = await Mao.find({ __v: 0 }, { _id: 1, mid: 1, oid: 1, username: 1, schedule: 1, activatedDate: 1 }).sort({ _id: -1 })
+        res.json(maos)
+    }
+    catch (err) {
+        res.json(err)
+    }
+})
+router.get('/mao/:username', async (req, res) => {
+    try {
+        const maos = await Mao.find({ __v: 0, oid: req.params.username }, { _id: 1, mid: 1, oid: 1, username: 1, schedule: 1, activatedDate: 1 }).sort({ _id: -1 })
         res.json(maos)
     }
     catch (err) {
@@ -39,20 +58,20 @@ router.post('/getmachineoption', async (req, res) => {
     try {
         console.log(req.body.schedule)
         console.log(req.body.activatedDate)
-        const maos = await Mao.find({ schedule:req.body.schedule,activatedDate:new Date(req.body.activatedDate.toString())}, { oid: 1, mid: 1,_id:0 })
+        const maos = await Mao.find({ schedule: req.body.schedule, activatedDate: new Date(req.body.activatedDate.toString()) }, { oid: 1, mid: 1, _id: 0 })
         console.log(maos)
-        let macArray=[];
+        let macArray = [];
         let opArray = [];
-        for(let i=0;i<maos.length;i++){
+        for (let i = 0; i < maos.length; i++) {
             macArray.push(maos[i].mid);
             opArray.push(maos[i].oid);
         }
-        const macs = await Machine.find({ __v: 0,_id: { $nin: macArray } }, { name: 1, _id: 1 })
+        const macs = await Machine.find({ __v: 0, _id: { $nin: macArray } }, { name: 1, _id: 1 })
         console.log(macs)
 
-        const users = await User.find({ role: 'operator',_id: { $nin: opArray } }, { username: 1, _id: 1 })
+        const users = await User.find({ role: 'operator', _id: { $nin: opArray } }, { username: 1, _id: 1 })
         console.log(users)
-        res.json({ms:macs,us:users})
+        res.json({ ms: macs, us: users })
     }
     catch (err) {
         res.json(err)
