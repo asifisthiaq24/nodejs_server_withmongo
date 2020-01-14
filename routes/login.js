@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User')
 const Machine = require('../models/Machine')
+const RFToken = require('../models/RFToken')
 const Mao = require('../models/Mao')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
@@ -213,6 +214,15 @@ router.get('/getrole/:userId', async (req, res) => {
         res.json({ message: err })
     }
 })
+router.get('/getrf', async (req, res) => {
+    try {
+        const rfs = await RFToken.find({ __v:0 })
+        res.json(rfs)
+    }
+    catch (err) {
+        res.json({ message: err })
+    }
+})
 router.post('/', async (req, res) => {
     try {
         //for inserting s
@@ -243,6 +253,16 @@ router.post('/', async (req, res) => {
                     const user = { username: req.body.username }
                     const accessToken = generateAccessToken(user)
                     const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET)
+                    const rft = new RFToken({
+                        refreshToken: refreshToken
+                    })
+                    rft.save()
+                        .then((data) => {
+                            console.log('refresh token inserted '+data)
+                        })
+                        .catch((err) => {
+                            console.log('refresh token insert hoi nai '+err)
+                        })
                     refreshTokens.push(refreshToken)
                     //jwt e
                     const users = await User.find({ username: req.body.username }, { username: 1, email: 1, role: 1, _id: 1 })
@@ -309,16 +329,32 @@ router.delete('/deletemachine/:macId', async (req, res) => {
         res.json({ message: err })
     }
 })
-router.post('/token', (req, res) => {
+router.post('/token', async (req, res) => {
     const refreshToken = req.body.token
     console.log('dhukse')
     if (refreshToken == null) return res.sendStatus(401)
-    if (!refreshTokens.includes(refreshToken)) return res.sendStatus(403)
-    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403)
-        const accessToken = generateAccessToken({ username: user.username })
-        res.json({ accessToken: accessToken })
-    })
+    try {
+        const rf = await RFToken.find({ refreshToken: refreshToken }, { refreshToken: 1, _id: 1 })
+        if(rf.length > 0){
+            jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+                if (err) return res.sendStatus(403)
+                const accessToken = generateAccessToken({ username: user.username })
+                res.json({ accessToken: accessToken })
+            })
+        }
+        else{
+            return res.sendStatus(403)
+        }
+    }
+    catch (err) {
+        console.log(err);
+    }
+    //if (!refreshTokens.includes(refreshToken)) return res.sendStatus(403)
+    // jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+    //     if (err) return res.sendStatus(403)
+    //     const accessToken = generateAccessToken({ username: user.username })
+    //     res.json({ accessToken: accessToken })
+    // })
 })
 function generateAccessToken(user) {
     return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '10m' }) //15s
