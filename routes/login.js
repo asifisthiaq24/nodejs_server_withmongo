@@ -46,6 +46,15 @@ router.get('/mao', async (req, res) => {
         res.json(err)
     }
 })
+router.post('/maofilter', async (req, res) => {
+    try {
+        const maos = await Mao.find({ oid:req.body.id,activatedDate:{$gte:new Date(req.body.from.toString()),$lte:new Date(req.body.to.toString())} }, { _id: 1, mid: 1, oid: 1, username: 1, schedule: 1, activatedDate: 1 }).sort({ _id: -1 })
+        res.json(maos)
+    }
+    catch (err) {
+        res.json(err)
+    }
+})
 router.get('/mao/:username', async (req, res) => {
     try {
         const maos = await Mao.find({ __v: 0, oid: req.params.username }, { _id: 1, mid: 1, oid: 1, username: 1, schedule: 1, activatedDate: 1 }).sort({ _id: -1 })
